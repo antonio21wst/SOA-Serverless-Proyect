@@ -1,0 +1,64 @@
+
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - webnet
+
+  postgres:
+    image: postgres:13
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_DB: db
+    ports:
+      - "5432:5432"
+    networks:
+      - webnet
+
+  mongodb:
+    image: mongo:4.4
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - webnet
+
+  soap_service:
+    build: ./soap_service
+    container_name: soap_service
+    depends_on:
+      - rabbitmq
+      - postgres
+      - mongodb
+    networks:
+      - webnet
+
+  auth_service:
+    build: ./auth_service
+    container_name: auth_service
+    depends_on:
+      - rabbitmq
+    networks:
+      - webnet
+
+  ui_service:
+    build: ./ui_service
+    container_name: ui_service
+    depends_on:
+      - soap_service
+      - auth_service
+    ports:
+      - "8000:8000"
+    networks:
+      - webnet
+
+networks:
+  webnet:
