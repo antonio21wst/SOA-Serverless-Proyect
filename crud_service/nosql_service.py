@@ -1,72 +1,20 @@
-'''
 import pika
 import json
 from pymongo import MongoClient
 
+# Conexión MongoDB
 client = MongoClient("mongodb://localhost:27017/")
-db = client["mi_basedatos"]
-
-def handle_message(ch, method, properties, body):
-    request = json.loads(body)
-    op = request['operation']
-    p = request['payload']
-    response = ""
-
-    try:
-        collection = db[p['collection']]
-
-        if op == 'nosql_insert':
-            result = collection.insert_one(p['document'])
-            response = str(result.inserted_id)
-        elif op == 'nosql_read':
-            result = list(collection.find(p['filters'], {'_id': False}))
-            response = json.dumps(result)
-        elif op == 'nosql_update':
-            collection.update_many(p['filters'], {'$set': p['updates']})
-            response = "OK"
-        elif op == 'nosql_delete':
-            collection.delete_many(p['filters'])
-            response = "OK"
-        elif op == 'nosql_aggregate':
-            pipeline = p['pipeline']
-            result = list(collection.aggregate(pipeline))
-            response = json.dumps(result)
-        else:
-            response = "Operación no válida"
-    except Exception as e:
-        response = f"Error: {str(e)}"
-
-    ch.basic_publish(
-        exchange='',
-        routing_key=properties.reply_to,
-        properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-        body=response
-    )
-    ch.basic_ack(delivery_tag=method.delivery_tag)
-
-# Setup RabbitMQ
-connection = pika.BlockingConnection(pika.ConnectionParameters('localhost'))
-channel = connection.channel()
-channel.queue_declare(queue='nosql_queue')
-channel.basic_consume(queue='nosql_queue', on_message_callback=handle_message)
-print("[MongoDB] Esperando mensajes...")
-channel.start_consuming()
-'''
-import pika
-import json
-from pymongo import MongoClient
-
-# Configuración MongoDB
-client = MongoClient("mongodb://localhost:27017/")
-db = client["test_nosql"]
 
 # Conexión RabbitMQ
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connection.channel()
-channel.queue_declare(queue="db_rpc_queue")
+channel.queue_declare(queue="sql_queue")
 
 def handle_nosql_operation(operation, payload):
     try:
+        # Usar base de datos dinámica
+        dbname = payload.get("dbname", "test")
+        db = client[dbname]
         collection = db[payload["collection"]]
 
         if operation == "CREATE":
@@ -111,5 +59,5 @@ def on_request(ch, method, props, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 print("[NoSQL SERVICE] Esperando mensajes...")
-channel.basic_consume(queue="db_rpc_queue", on_message_callback=on_request)
+channel.basic_consume(queue="sql_queue", on_message_callback=on_request)
 channel.start_consuming()
