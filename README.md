@@ -1,5 +1,9 @@
 # 🧩 SOA Serverless DBMS con Docker, RabbitMQ y Autenticación Google
 
+**Equipo:**
+**Coyotzi Juarez Jose Antonio**
+**Aguilar Macias Javier**
+
 Este proyecto implementa un sistema de gestión de bases de datos serverless de propósito general, utilizando una arquitectura orientada a servicios (SOA) y una arquitectura de paso de mensajes basada en RabbitMQ. El sistema es completamente transparente para el usuario y permite operar con bases de datos sin necesidad de conocer un sistema gestor de bases de datos (SGBD) específico.
 
 <img src="https://eitpl.in/assets/img/service/database.gif" alt="App Platform" width="300"/>

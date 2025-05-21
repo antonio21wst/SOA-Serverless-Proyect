@@ -4,7 +4,6 @@ import pika
 import json
 
 app = Flask(__name__)
-
 def handle_sql_operation(operation, payload):
     dbname = payload.get("dbname", "postgres") 
     query = payload.get("query", "")
@@ -54,30 +53,7 @@ def handle_sql_operation(operation, payload):
             cursor.close()
         if 'conn' in locals():
             conn.close()
-'''
-def callback(ch, method, properties, body):
-    try:
-        message = json.loads(body)
-        if message.get("engine") != "sql":
-            return  # Ignorar si no es para este servicio
 
-        operation = message.get("operation")
-        payload = message.get("payload", {})
-
-        response = handle_sql_operation(operation, payload)
-    except Exception as e:
-        response = {"error": f"Excepción en el SQL service: {str(e)}"}
-
-    # Enviar la respuesta aunque haya error
-    
-    if properties.reply_to:
-        ch.basic_publish(
-            exchange="",
-            routing_key=properties.reply_to,
-            properties=pika.BasicProperties(correlation_id=properties.correlation_id),
-            body=json.dumps(response)
-        )
-'''
 def on_request(ch, method, properties, body):
     try:
         message = json.loads(body)
