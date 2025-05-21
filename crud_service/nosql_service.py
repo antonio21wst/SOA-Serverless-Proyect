@@ -8,7 +8,7 @@ client = MongoClient("mongodb://localhost:27017/")
 # Conexión RabbitMQ
 connection = pika.BlockingConnection(pika.ConnectionParameters("localhost"))
 channel = connection.channel()
-channel.queue_declare(queue="sql_queue")
+channel.queue_declare(queue="nosql_queue")
 
 def handle_nosql_operation(operation, payload):
     try:
@@ -59,5 +59,5 @@ def on_request(ch, method, props, body):
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
 print("[NoSQL SERVICE] Esperando mensajes...")
-channel.basic_consume(queue="sql_queue", on_message_callback=on_request)
+channel.basic_consume(queue="nosql_queue", on_message_callback=on_request, auto_ack=True)
 channel.start_consuming()

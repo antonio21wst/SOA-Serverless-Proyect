@@ -54,15 +54,45 @@ def handle_sql_operation(operation, payload):
             cursor.close()
         if 'conn' in locals():
             conn.close()
-
+'''
 def callback(ch, method, properties, body):
-    message = json.loads(body)
-    operation = message.get("operation")
-    payload = message.get("payload", {})
+    try:
+        message = json.loads(body)
+        if message.get("engine") != "sql":
+            return  # Ignorar si no es para este servicio
 
-    response = handle_sql_operation(operation, payload)
+        operation = message.get("operation")
+        payload = message.get("payload", {})
 
-    # Enviar la respuesta por la cola de retorno
+        response = handle_sql_operation(operation, payload)
+    except Exception as e:
+        response = {"error": f"Excepción en el SQL service: {str(e)}"}
+
+    # Enviar la respuesta aunque haya error
+    
+    if properties.reply_to:
+        ch.basic_publish(
+            exchange="",
+            routing_key=properties.reply_to,
+            properties=pika.BasicProperties(correlation_id=properties.correlation_id),
+            body=json.dumps(response)
+        )
+'''
+def on_request(ch, method, properties, body):
+    try:
+        message = json.loads(body)
+        if message.get("engine") != "sql":
+            return  # Ignorar si no es para este servicio
+
+        operation = message.get("operation")
+        payload = message.get("payload", {})
+
+        response = handle_sql_operation(operation, payload)
+    except Exception as e:
+        response = {"error": f"Excepción en el SQL service: {str(e)}"}
+
+    # Enviar la respuesta aunque haya error
+    
     if properties.reply_to:
         ch.basic_publish(
             exchange="",
@@ -73,7 +103,8 @@ def callback(ch, method, properties, body):
 
 channel = pika.BlockingConnection(pika.ConnectionParameters("localhost")).channel()
 channel.queue_declare(queue="sql_queue")
-channel.basic_consume(queue="sql_queue", on_message_callback=callback, auto_ack=True)
+channel.basic_consume(queue='sql_queue', on_message_callback=on_request, auto_ack=True)
+
 
 print(" [*] Esperando mensajes de SQL. Para salir presiona CTRL+C")
 channel.start_consuming()
